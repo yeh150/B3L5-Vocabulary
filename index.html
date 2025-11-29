@@ -138,9 +138,9 @@
                         <h2 id="l3-word" class="text-4xl font-bold text-gray-800 mb-2">Passenger</h2>
                         <h3 id="l3-meaning" class="text-xl text-gray-500">乘客</h3>
                         
-                        <!-- Hint Button (Initially Hidden) -->
-                        <button id="l3-hint-btn" onclick="playL3Hint()" class="hidden mt-4 bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full text-sm font-bold flex items-center justify-center mx-auto hover:bg-yellow-200">
-                            <i class="fas fa-volume-up mr-2"></i> 聽發音 (再試一次)
+                        <!-- Play Audio Button (New Feature) -->
+                        <button onclick="playL3Hint()" class="mt-4 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-bold flex items-center justify-center mx-auto hover:bg-blue-200 transition">
+                            <i class="fas fa-volume-up mr-2"></i> 聽示範發音
                         </button>
                     </div>
 
@@ -151,10 +151,21 @@
                 </div>
 
                 <!-- Controls -->
-                <div class="mt-auto pb-8 flex justify-center">
-                    <button id="l3-mic-btn" onclick="toggleL3Mic()" class="w-20 h-20 rounded-full bg-red-500 text-white shadow-xl flex items-center justify-center active:scale-95 transition text-3xl">
+                <div class="mt-auto pb-8 w-full flex items-center justify-center relative px-6">
+                    
+                    <!-- Mic Button (Center) -->
+                    <button id="l3-mic-btn" onclick="toggleL3Mic()" class="w-20 h-20 rounded-full bg-red-500 text-white shadow-xl flex items-center justify-center active:scale-95 transition text-3xl z-10">
                         <i id="l3-mic-icon" class="fas fa-microphone"></i>
                     </button>
+
+                    <!-- Skip Button (Right) -->
+                    <button onclick="skipL3Question()" class="absolute right-6 flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition">
+                        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-1">
+                            <i class="fas fa-forward text-lg"></i>
+                        </div>
+                        <span class="text-xs">略過</span>
+                    </button>
+
                 </div>
             </div>
 
@@ -241,6 +252,7 @@
         };
 
         let recognition;
+        let isListening = false; // Track listening state manually
 
         // --- 3. CORE FUNCTIONS ---
 
@@ -468,7 +480,7 @@
                     setTimeout(() => {
                         first.className = first.className.replace('shake border-red-400 bg-red-50', '');
                         el.className = el.className.replace('shake border-red-400 bg-red-50', '');
-                        // Add base class back just in case replace killed it, though replace string logic above is specific.
+                        
                         // Better: just remove specific error classes
                         first.classList.remove('shake', 'border-red-400', 'bg-red-50');
                         el.classList.remove('shake', 'border-red-400', 'bg-red-50');
@@ -520,36 +532,58 @@
 
             // Reset UI
             document.getElementById('l3-feedback').innerHTML = '<p class="text-gray-400 text-sm">請按麥克風開始錄音</p>';
-            document.getElementById('l3-hint-btn').classList.add('hidden');
             
+            resetMicUI();
+        }
+
+        function toggleL3Mic() {
+            // Check if recognition exists
+            if (!recognition) {
+                alert("瀏覽器不支援，請使用 Chrome/Safari");
+                return;
+            }
+
+            if (isListening) {
+                // Stop manually
+                recognition.stop();
+                isListening = false;
+                resetMicUI();
+            } else {
+                // Start
+                try {
+                    recognition.start();
+                    // isListening will be set in onstart logic
+                } catch(e) {
+                    console.log("Mic start error (likely already started)", e);
+                    // Force restart UI if stuck
+                    recognition.stop(); 
+                    isListening = false;
+                    resetMicUI();
+                }
+            }
+        }
+
+        function resetMicUI() {
             const micBtn = document.getElementById('l3-mic-btn');
             micBtn.disabled = false;
-            micBtn.classList.remove('bg-gray-400', 'bg-red-500', 'pulse-ring');
+            micBtn.classList.remove('bg-gray-400', 'bg-red-600', 'pulse-ring');
             micBtn.classList.add('bg-red-500');
             document.getElementById('l3-mic-icon').className = "fas fa-microphone";
         }
 
-        function toggleL3Mic() {
-            if (isListening) {
-                recognition.stop();
-            } else {
-                try {
-                    recognition.start();
-                } catch(e) { recognition.stop(); }
-            }
+        function skipL3Question() {
+            // Skip logic: Stop any listening, move next, no points
+            if (recognition) recognition.abort(); // Force stop
+            isListening = false;
+            
+            gameState.l3Index++;
+            renderLevel3Question();
         }
 
         function playL3Hint() {
+            // Play audio always available
             const word = gameState.l3Data[gameState.l3Index].en;
             speak(word, 0.7);
-            
-            // Re-enable mic after hint
-            setTimeout(() => {
-                document.getElementById('l3-mic-btn').disabled = false;
-                document.getElementById('l3-mic-btn').classList.remove('bg-gray-400');
-                document.getElementById('l3-mic-btn').classList.add('bg-red-500');
-                document.getElementById('l3-feedback').innerHTML = '<p class="text-blue-500 text-sm font-bold">已聽提示，請再念一次</p>';
-            }, 1000);
         }
 
         // --- SPEECH LOGIC ---
@@ -557,7 +591,7 @@
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 recognition = new SpeechRecognition();
-                recognition.continuous = false;
+                recognition.continuous = false; // Stop after one phrase
                 recognition.interimResults = false;
                 recognition.lang = 'en-US';
 
@@ -565,15 +599,14 @@
                     isListening = true;
                     const btn = document.getElementById('l3-mic-btn');
                     btn.classList.add('pulse-ring', 'bg-red-600');
+                    btn.classList.remove('bg-red-500');
                     document.getElementById('l3-mic-icon').className = "fas fa-stop";
                     document.getElementById('l3-feedback').innerHTML = '<p class="text-red-500 animate-pulse font-bold">聆聽中...</p>';
                 };
 
                 recognition.onend = () => {
                     isListening = false;
-                    const btn = document.getElementById('l3-mic-btn');
-                    btn.classList.remove('pulse-ring');
-                    document.getElementById('l3-mic-icon').className = "fas fa-microphone";
+                    resetMicUI();
                 };
 
                 recognition.onresult = (event) => {
@@ -586,17 +619,18 @@
                 };
 
                 recognition.onerror = (event) => {
+                    // Common errors: no-speech, not-allowed, service-not-allowed
+                    console.log("Speech Error:", event.error);
                     if (event.error === 'no-speech') {
                          document.getElementById('l3-feedback').innerHTML = '<p class="text-orange-500 font-bold">沒聽到聲音，請再試一次</p>';
-                    } else {
-                        console.log("Error", event.error);
+                    } else if (event.error === 'not-allowed') {
+                        document.getElementById('l3-feedback').innerHTML = '<p class="text-red-500 font-bold">麥克風權限被拒，請允許使用</p>';
                     }
                     isListening = false;
-                    const btn = document.getElementById('l3-mic-btn');
-                    btn.classList.remove('pulse-ring');
+                    resetMicUI();
                 };
             } else {
-                alert("瀏覽器不支援語音辨識");
+                console.warn("Browser does not support Speech API");
             }
         }
 
@@ -615,11 +649,13 @@
             }
 
             if (isCorrect) {
+                // Success
+                document.getElementById('l3-feedback').innerHTML = `<p class="text-green-600 font-bold"><i class="fas fa-check"></i> Great! (${transcript})</p>`;
+                
+                // Only count score if first try (or lenient) - Prompt implies 80% accuracy needed.
+                // We count score only if they didn't make a mistake (or hit skip)
                 if(!gameState.l3MistakeMade) {
                     gameState.l3CorrectCount++;
-                     document.getElementById('l3-feedback').innerHTML = `<p class="text-green-600 font-bold"><i class="fas fa-check"></i> Great! (${transcript})</p>`;
-                } else {
-                     document.getElementById('l3-feedback').innerHTML = `<p class="text-green-600 font-bold"><i class="fas fa-check"></i> Good job!</p>`;
                 }
 
                 setTimeout(() => {
@@ -631,17 +667,11 @@
                 // Wrong
                 gameState.l3MistakeMade = true;
                 document.getElementById('l3-feedback').innerHTML = `<p class="text-red-500 font-bold">不正確 (聽到: ${transcript})</p>`;
-                
-                // Show hint button and disable mic until clicked
-                document.getElementById('l3-hint-btn').classList.remove('hidden');
-                document.getElementById('l3-mic-btn').disabled = true;
-                document.getElementById('l3-mic-btn').classList.add('bg-gray-400');
-                document.getElementById('l3-mic-btn').classList.remove('bg-red-500');
             }
         }
 
         function endLevel3() {
-            const accuracy = (gameState.l3CorrectCount / 10) * 100;
+            const accuracy = Math.round((gameState.l3CorrectCount / 10) * 100);
             gameState.scores.l3 = accuracy;
 
             if (accuracy >= 80) {
@@ -713,6 +743,7 @@
         }
 
         function speak(text, rate = 0.8) {
+            if (!window.speechSynthesis) return;
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'en-US';
