@@ -16,8 +16,13 @@
             70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
-        .card-selected { border-color: #4f46e5; background-color: #e0e7ff; transform: scale(1.02); }
-        .card-matched { visibility: hidden; opacity: 0; transition: opacity 0.3s; }
+        /* 加強選中效果：深色邊框 + 明顯底色 */
+        .card-selected { 
+            border-color: #4338ca !important; /* Indigo-700 */
+            background-color: #c7d2fe !important; /* Indigo-200 */
+            border-width: 3px !important;
+            transform: scale(0.98);
+        }
         .shake { animation: shake 0.5s; }
         @keyframes shake {
             0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); }
@@ -54,7 +59,7 @@
                 <div class="bg-blue-50 p-4 rounded-xl w-full text-sm space-y-2">
                     <h3 class="font-bold text-indigo-700 mb-2">關卡說明：</h3>
                     <p>1️⃣ <span class="font-bold">聽音辨義</span>：聽發音選中文 (全單字)</p>
-                    <p>2️⃣ <span class="font-bold">中英配對</span>：限時60秒 (隨機15題)</p>
+                    <p>2️⃣ <span class="font-bold">中英配對</span>：限時90秒 (隨機10題)</p>
                     <p>3️⃣ <span class="font-bold">語音辨識</span>：開口說英文 (隨機10題)</p>
                     <p class="text-red-500 text-xs mt-2 border-t border-blue-200 pt-2 font-bold">⚠️ 每關正確率須達 80% 才能晉級！</p>
                 </div>
@@ -107,8 +112,8 @@
                     <div id="l2-timer-bar" class="h-full bg-green-500 progress-bar" style="width: 100%"></div>
                 </div>
                 <div class="text-center py-2 bg-gray-50 border-b flex justify-between px-4">
-                    <span class="text-sm text-gray-500">配對剩餘: <span id="l2-remaining" class="font-bold text-indigo-600">15</span> 組</span>
-                    <span class="text-sm text-gray-500">時間: <span id="l2-time-text" class="font-bold text-red-500">60</span>s</span>
+                    <span class="text-sm text-gray-500">配對剩餘: <span id="l2-remaining" class="font-bold text-indigo-600">10</span> 組</span>
+                    <span class="text-sm text-gray-500">時間: <span id="l2-time-text" class="font-bold text-red-500">90</span>s</span>
                 </div>
 
                 <!-- Grid Container (Scrollable) -->
@@ -225,14 +230,14 @@
             l1CorrectCount: 0,
             l2Data: [],
             l2PairsLeft: 0,
-            l2TimeLeft: 60,
+            l2TimeLeft: 0,
             l2Timer: null,
             l2Selected: null,
             l2Lock: false,
             l3Data: [],
             l3Index: 0,
             l3CorrectCount: 0,
-            l3MistakeMade: false // Track if they messed up current word
+            l3MistakeMade: false
         };
 
         let recognition;
@@ -263,7 +268,7 @@
             
             const titles = ["聽音辨義", "中英配對", "語音辨識"];
             const icons = ["fa-headphones-alt", "fa-puzzle-piece", "fa-microphone-alt"];
-            const descs = ["聽發音選出正確中文", "60秒內完成配對 (隨機15題)", "大聲唸出單字 (隨機10題)"];
+            const descs = ["聽發音選出正確中文", "90秒內完成配對 (隨機10題)", "大聲唸出單字 (隨機10題)"];
             
             document.getElementById('intro-title').innerText = `Level ${level}: ${titles[level-1]}`;
             document.getElementById('intro-icon').className = `fas ${icons[level-1]} text-6xl mb-4`;
@@ -366,18 +371,18 @@
             }
         }
 
-        // --- LEVEL 2: MATCHING (SPEED) ---
+        // --- LEVEL 2: MATCHING (SPEED - MODIFIED) ---
         function initLevel2() {
             document.getElementById('view-level2').classList.remove('hidden');
-            // Random 15 pairs
-            const selection = shuffle([...vocabDB]).slice(0, 15);
+            // Random 10 pairs (Reduced from 15)
+            const selection = shuffle([...vocabDB]).slice(0, 10);
             gameState.l2Data = selection;
-            gameState.l2PairsLeft = 15;
-            gameState.l2TimeLeft = 60;
+            gameState.l2PairsLeft = 10;
+            gameState.l2TimeLeft = 90; // Increased to 90s
             gameState.l2Selected = null;
             gameState.l2Lock = false;
 
-            // Generate Cards (15 * 2 = 30 cards)
+            // Generate Cards (10 * 2 = 20 cards)
             let cards = [];
             selection.forEach(item => {
                 cards.push({ id: item.id, type: 'en', text: item.en });
@@ -397,15 +402,16 @@
                 grid.appendChild(el);
             });
 
-            document.getElementById('l2-remaining').innerText = 15;
-            document.getElementById('l2-time-text').innerText = 60;
+            document.getElementById('l2-remaining').innerText = 10;
+            document.getElementById('l2-time-text').innerText = 90;
             document.getElementById('l2-timer-bar').style.width = '100%';
 
             // Start Timer
+            if (gameState.l2Timer) clearInterval(gameState.l2Timer);
             gameState.l2Timer = setInterval(() => {
                 gameState.l2TimeLeft--;
                 document.getElementById('l2-time-text').innerText = gameState.l2TimeLeft;
-                const pct = (gameState.l2TimeLeft / 60) * 100;
+                const pct = (gameState.l2TimeLeft / 90) * 100;
                 document.getElementById('l2-timer-bar').style.width = `${pct}%`;
 
                 if (gameState.l2TimeLeft <= 0) {
@@ -416,7 +422,8 @@
         }
 
         function handleCardClick(el) {
-            if (gameState.l2Lock || el.classList.contains('card-matched') || el.classList.contains('card-selected')) return;
+            // Prevent clicking locked, matched, or already selected
+            if (gameState.l2Lock || el.style.display === 'none' || el.classList.contains('card-selected')) return;
 
             el.classList.add('card-selected');
 
@@ -431,11 +438,12 @@
                 if (first.dataset.id === el.dataset.id && first.dataset.type !== el.dataset.type) {
                     // Match!
                     setTimeout(() => {
+                        // REMOVE LOGIC: Set display none to fill gap
+                        first.style.display = 'none';
+                        el.style.display = 'none';
+                        
                         first.classList.remove('card-selected');
                         el.classList.remove('card-selected');
-                        first.classList.add('card-matched');
-                        el.classList.add('card-matched');
-                        // Remove from flow to clean up UI (optional, but 'visibility: hidden' keeps layout stable)
                         
                         gameState.l2PairsLeft--;
                         document.getElementById('l2-remaining').innerText = gameState.l2PairsLeft;
@@ -452,11 +460,19 @@
                     setTimeout(() => {
                         first.classList.add('shake', 'border-red-400', 'bg-red-50');
                         el.classList.add('shake', 'border-red-400', 'bg-red-50');
+                        // Remove selected styling during error shake so user knows it failed
+                        first.classList.remove('card-selected');
+                        el.classList.remove('card-selected');
                     }, 100);
 
                     setTimeout(() => {
-                        first.className = first.className.replace('shake border-red-400 bg-red-50 card-selected', '');
-                        el.className = el.className.replace('shake border-red-400 bg-red-50 card-selected', '');
+                        first.className = first.className.replace('shake border-red-400 bg-red-50', '');
+                        el.className = el.className.replace('shake border-red-400 bg-red-50', '');
+                        // Add base class back just in case replace killed it, though replace string logic above is specific.
+                        // Better: just remove specific error classes
+                        first.classList.remove('shake', 'border-red-400', 'bg-red-50');
+                        el.classList.remove('shake', 'border-red-400', 'bg-red-50');
+                        
                         gameState.l2Selected = null;
                         gameState.l2Lock = false;
                     }, 800);
@@ -465,11 +481,8 @@
         }
 
         function endLevel2(finished) {
-            // Calculate score based on pairs found if timeout, or 100% if finished
-            // Requirement: 80% accuracy. Since it's a speed game, let's base it on pairs found.
-            // 80% of 15 is 12.
-            const pairsFound = 15 - gameState.l2PairsLeft;
-            const score = Math.round((pairsFound / 15) * 100);
+            const pairsFound = 10 - gameState.l2PairsLeft;
+            const score = Math.round((pairsFound / 10) * 100);
             gameState.scores.l2 = score;
 
             if (score >= 80) {
@@ -602,20 +615,6 @@
             }
 
             if (isCorrect) {
-                // Correct
-                if (!gameState.l3MistakeMade) gameState.l3CorrectCount++; // Only count if correct on first try (or lenient?)
-                // Actually, logic says "If wrong, hint then retry".
-                // If they get it right eventually, do we count it? 
-                // Let's count it as correct if they eventually pass, BUT "80% accuracy" usually implies first try.
-                // However, for teaching, if they self-correct, it's good.
-                // Let's implement strict scoring: only +1 if no hint used? 
-                // No, prompt says "Must reach 80%". If infinite retries, everyone gets 100%.
-                // Let's say: If they used a hint, they pass the question but don't get the point? Or get half point?
-                // To keep it encouraging: If they succeed after hint, they get the point, BUT if they skip, they lose it. 
-                // Since there is no skip button, they must pass. 
-                // Wait, "達正確率80%". If they are forced to retry until correct, correctness is 100%.
-                // So, the 'correctness' must be based on "Did they get it right the FIRST time?".
-                
                 if(!gameState.l3MistakeMade) {
                     gameState.l3CorrectCount++;
                      document.getElementById('l3-feedback').innerHTML = `<p class="text-green-600 font-bold"><i class="fas fa-check"></i> Great! (${transcript})</p>`;
@@ -642,14 +641,6 @@
         }
 
         function endLevel3() {
-            // Count logic: We counted correct on FIRST try roughly or passed?
-            // Let's assume gameState.l3CorrectCount tracks "Perfect" answers.
-            // If they retried, they pass the level flow but score might be lower.
-            // But wait, if they are stuck in loop until correct, how do they fail?
-            // Modification: Allow them to proceed even if "Good job" (after retry).
-            // But score only increments if !mistakeMade. 
-            // So if they made mistakes on 3 words, score is 7/10.
-            
             const accuracy = (gameState.l3CorrectCount / 10) * 100;
             gameState.scores.l3 = accuracy;
 
