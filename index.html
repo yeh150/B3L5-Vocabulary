@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>B3L5 Mind the Gap - 語音闖關</title>
+    <!-- Tailwind CSS for rapid styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans TC', 'Nunito', sans-serif;
+            touch-action: manipulation; /* Improves touch response */
+            background-color: #f0f9ff;
+        }
+        
+        /* Animation for mic listening */
+        .pulse-ring {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            animation: pulse-red 1.5s infinite;
+        }
+        
+        @keyframes pulse-red {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .correct-anim { animation: bounce 0.5s; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100">
+
+    <!-- APP CONTAINER -->
+    <div id="app" class="w-full max-w-md h-full max-h-[900px] bg-white shadow-xl relative overflow-hidden sm:rounded-xl sm:h-[90vh] sm:border-4 sm:border-indigo-200">
+        
+        <!-- HEADER (Shared) -->
+        <div class="absolute top-0 w-full bg-indigo-600 text-white p-4 z-10 shadow-md flex justify-between items-center">
+            <h1 class="font-bold text-lg"><i class="fas fa-subway mr-2"></i>Mind the Gap!</h1>
+            <span id="progress-indicator" class="text-sm bg-indigo-800 px-2 py-1 rounded-full hidden">0/10</span>
+        </div>
+
+        <!-- VIEW 1: LOGIN / START -->
+        <div id="view-start" class="h-full flex flex-col justify-center items-center p-8 space-y-8">
+            <div class="text-center space-y-2">
+                <div class="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">🇬🇧</div>
+                <h2 class="text-3xl font-bold text-gray-800">單字語音闖關</h2>
+                <p class="text-gray-500">B3L5: I No Longer Mind the Gap</p>
+                <p class="text-sm text-indigo-500 font-bold bg-indigo-50 inline-block px-3 py-1 rounded-full">CEFR A1 Level</p>
+            </div>
+
+            <div class="w-full space-y-4">
+                <label class="block text-gray-700 font-bold mb-2">請輸入姓名 / 座號：</label>
+                <input type="text" id="username-input" placeholder="例如：701 王小明" class="w-full p-4 border-2 border-indigo-200 rounded-xl text-lg focus:outline-none focus:border-indigo-500 transition shadow-sm text-center">
+                
+                <button onclick="startGame()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transform transition active:scale-95 text-xl flex items-center justify-center">
+                    <i class="fas fa-play mr-2"></i> 開始挑戰
+                </button>
+                
+                <p class="text-xs text-center text-gray-400 mt-4">
+                    <i class="fas fa-info-circle"></i> 需允許使用麥克風權限<br>建議使用 Chrome 或 Safari 瀏覽器
+                </p>
+            </div>
+        </div>
+
+        <!-- VIEW 2: GAME LOOP -->
+        <div id="view-game" class="h-full flex flex-col pt-20 pb-6 px-6 hidden relative">
+            
+            <!-- Word Card -->
+            <div class="flex-1 flex flex-col items-center justify-center space-y-6">
+                
+                <!-- Word Display -->
+                <div class="w-full bg-white border-2 border-gray-100 rounded-2xl shadow-lg p-6 text-center relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
+                    
+                    <p class="text-gray-400 text-sm mb-2">Vocabulary</p>
+                    <h2 id="current-word" class="text-4xl font-bold text-gray-800 mb-2">Passenger</h2>
+                    <p id="current-pos" class="text-indigo-500 text-lg font-medium italic mb-4">(n.)</p>
+                    
+                    <div class="h-px w-16 bg-gray-200 mx-auto mb-4"></div>
+                    
+                    <h3 id="current-meaning" class="text-2xl text-gray-600 font-bold">乘客</h3>
+                </div>
+
+                <!-- Example Sentence (Collapsible/Small) -->
+                <div class="w-full bg-blue-50 rounded-xl p-4 text-center">
+                    <p id="current-sentence" class="text-gray-600 text-sm leading-relaxed">
+                        The train was full of passengers.
+                    </p>
+                    <button onclick="speakSentence()" class="mt-2 text-indigo-600 text-sm font-bold flex items-center justify-center mx-auto hover:underline">
+                        <i class="fas fa-volume-up mr-1"></i> 聽例句
+                    </button>
+                </div>
+
+                <!-- Feedback Area -->
+                <div id="feedback-area" class="h-16 flex items-center justify-center w-full">
+                    <p class="text-gray-400 text-sm">點擊麥克風唸出單字</p>
+                </div>
+
+            </div>
+
+            <!-- Controls -->
+            <div class="mt-auto w-full pb-8">
+                <div class="flex justify-center items-center space-x-6">
+                    <!-- Standard TTS -->
+                    <button onclick="speakWord()" class="w-16 h-16 rounded-full bg-gray-200 text-gray-700 shadow-md flex items-center justify-center active:bg-gray-300">
+                        <i class="fas fa-ear-listen text-2xl"></i>
+                    </button>
+
+                    <!-- Microphone (Main Action) -->
+                    <button id="mic-btn" onclick="toggleListening()" class="w-24 h-24 rounded-full bg-red-500 text-white shadow-xl flex items-center justify-center transform transition active:scale-95 border-4 border-red-100">
+                        <i id="mic-icon" class="fas fa-microphone text-4xl"></i>
+                    </button>
+
+                    <!-- Skip/Next (Hidden initially) -->
+                    <button id="next-btn" onclick="nextLevel()" class="w-16 h-16 rounded-full bg-green-500 text-white shadow-md flex items-center justify-center hidden active:bg-green-600 correct-anim">
+                        <i class="fas fa-arrow-right text-2xl"></i>
+                    </button>
+                </div>
+                <p class="text-center text-xs text-gray-400 mt-4">長按麥克風無效，請點擊一次開始</p>
+            </div>
+        </div>
+
+        <!-- VIEW 3: RESULT -->
+        <div id="view-result" class="h-full flex flex-col justify-center items-center p-6 hidden bg-indigo-900 text-white text-center">
+            
+            <div class="bg-white text-gray-800 rounded-2xl p-8 w-full shadow-2xl space-y-4 max-w-sm">
+                <div class="border-b-2 border-gray-100 pb-4 mb-2">
+                    <h2 class="text-xl font-bold text-gray-400">闖關成績單</h2>
+                    <p id="result-date" class="text-xs text-gray-400 mt-1">2023/10/25</p>
+                </div>
+
+                <div class="space-y-1">
+                    <p class="text-sm text-gray-500">姓名</p>
+                    <h3 id="result-name" class="text-2xl font-bold text-indigo-700">王小明</h3>
+                </div>
+
+                <div class="py-4 bg-gray-50 rounded-xl">
+                    <p class="text-sm text-gray-500 mb-1">總分</p>
+                    <div class="flex justify-center items-baseline text-indigo-600">
+                        <span id="result-score" class="text-6xl font-black">100</span>
+                        <span class="text-xl font-bold">/ 100</span>
+                    </div>
+                </div>
+
+                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <p class="text-xs text-yellow-600 font-bold uppercase tracking-wide mb-1">Teacher's Comment</p>
+                    <p id="result-comment" class="text-gray-700 font-medium text-sm">
+                        根本是被英文耽誤的饒舌歌手！
+                    </p>
+                </div>
+
+                <div class="pt-4">
+                    <p class="text-xs text-red-500 font-bold animate-pulse">
+                        <i class="fas fa-camera"></i> 請截圖此畫面繳交作業
+                    </p>
+                </div>
+            </div>
+
+            <button onclick="location.reload()" class="mt-8 text-white text-sm opacity-70 hover:opacity-100 underline">
+                重新挑戰
+            </button>
+        </div>
+
+    </div>
+
+    <!-- AUDIO ELEMENTS for SFX -->
+    <!-- Using inline minimal base64 for sound effects to keep it single file -->
+    <script>
+        // Data generated from PDF analysis (B3L5 Context)
+        const vocabList = [
+            { word: "passenger", pos: "n.", meaning: "乘客", sentence: "There were many passengers on the train." },
+            { word: "platform", pos: "n.", meaning: "月台", sentence: "Please wait on the platform." },
+            { word: "gap", pos: "n.", meaning: "空隙/缺口", sentence: "Mind the gap between the train and the platform." },
+            { word: "mind", pos: "v.", meaning: "介意/留意", sentence: "I don't mind waiting for you." },
+            { word: "voice", pos: "n.", meaning: "聲音", sentence: "She heard a familiar voice." },
+            { word: "security", pos: "n.", meaning: "安全/保全", sentence: "We must go through security checks." },
+            { word: "arrive", pos: "v.", meaning: "到達", sentence: "When will the train arrive?" },
+            { word: "departure", pos: "n.", meaning: "出發/離開", sentence: "The departure time is 3:00 PM." },
+            { word: "silence", pos: "n.", meaning: "沈默/寂靜", sentence: "They walked in silence." },
+            { word: "watch one's step", pos: "phr.", meaning: "小心腳步", sentence: "Please watch your step when getting off." }
+        ];
+
+        let currentState = {
+            user: "",
+            level: 0,
+            score: 0,
+            attempts: 0
+        };
+
+        let recognition;
+        let isListening = false;
+
+        // Initialize Speech Recognition
+        function initSpeech() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = false; // Stop after one phrase
+                recognition.interimResults = false;
+                recognition.lang = 'en-US'; // Detect English
+
+                recognition.onstart = function() {
+                    isListening = true;
+                    updateMicVisuals(true);
+                    document.getElementById('feedback-area').innerHTML = '<p class="text-red-500 font-bold animate-pulse">正在聆聽... 請說英文</p>';
+                };
+
+                recognition.onend = function() {
+                    isListening = false;
+                    updateMicVisuals(false);
+                    // If we didn't get a result but stopped naturally, prompt again
+                    if(!document.getElementById('next-btn').classList.contains('flex')) {
+                         document.getElementById('feedback-area').innerHTML = '<p class="text-gray-400 text-sm">沒聽清楚，請再試一次</p>';
+                    }
+                };
+
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript.toLowerCase();
+                    const targetWord = vocabList[currentState.level].word.toLowerCase();
+                    
+                    // Fuzzy matching logic (A1 level friendly)
+                    // If the transcript contains the word, or strict match
+                    // Remove special chars from phrase like "watch one's step" -> "watch step" or "watch your step"
+                    
+                    let isCorrect = false;
+                    
+                    // Handling phrases logic
+                    if (targetWord.includes("one's")) {
+                        // e.g., watch one's step -> accept "watch your step", "watch my step", "watch step"
+                        const base = targetWord.replace("one's", "").trim(); // "watch step"
+                        const parts = base.split(" ");
+                        if (transcript.includes(parts[0]) && transcript.includes(parts[1])) {
+                            isCorrect = true;
+                        }
+                    } else {
+                        // Simple words
+                        if (transcript.includes(targetWord) || targetWord.includes(transcript)) {
+                            // Length check to prevent "a" matching "apple" too easily
+                            if (Math.abs(transcript.length - targetWord.length) < 4) {
+                                isCorrect = true;
+                            }
+                        }
+                    }
+
+                    handleAnswer(isCorrect, transcript);
+                };
+
+                recognition.onerror = function(event) {
+                    console.log("Speech Error", event.error);
+                    document.getElementById('feedback-area').innerHTML = '<p class="text-red-500 text-sm">麥克風錯誤: ' + event.error + '</p>';
+                    isListening = false;
+                    updateMicVisuals(false);
+                };
+            } else {
+                alert("您的瀏覽器不支援語音辨識功能，請使用 Chrome 或 Safari。");
+            }
+        }
+
+        // --- Core Game Logic ---
+
+        function startGame() {
+            const name = document.getElementById('username-input').value.trim();
+            if (!name) {
+                alert("請輸入姓名！");
+                return;
+            }
+            currentState.user = name;
+            currentState.level = 0;
+            currentState.score = 0;
+
+            document.getElementById('view-start').classList.add('hidden');
+            document.getElementById('view-game').classList.remove('hidden');
+            document.getElementById('progress-indicator').classList.remove('hidden');
+            
+            initSpeech();
+            loadLevel();
+        }
+
+        function loadLevel() {
+            if (currentState.level >= vocabList.length) {
+                finishGame();
+                return;
+            }
+
+            const data = vocabList[currentState.level];
+            
+            // Update UI
+            document.getElementById('current-word').innerText = capitalize(data.word);
+            document.getElementById('current-pos').innerText = `(${data.pos})`;
+            document.getElementById('current-meaning').innerText = data.meaning;
+            document.getElementById('current-sentence').innerText = data.sentence;
+            document.getElementById('progress-indicator').innerText = `${currentState.level + 1} / ${vocabList.length}`;
+            
+            // Reset Controls
+            document.getElementById('feedback-area').innerHTML = '<p class="text-gray-400 text-sm">點擊紅色麥克風唸出單字</p>';
+            document.getElementById('next-btn').classList.add('hidden');
+            document.getElementById('next-btn').classList.remove('flex');
+            document.getElementById('mic-btn').classList.remove('hidden');
+            document.getElementById('mic-btn').disabled = false;
+            
+            // Auto play TTS slightly delayed
+            // setTimeout(speakWord, 500); 
+            // Better to let user click to hear, less intrusive.
+        }
+
+        function speakWord() {
+            const word = vocabList[currentState.level].word;
+            speak(word);
+        }
+
+        function speakSentence() {
+            const sentence = vocabList[currentState.level].sentence;
+            speak(sentence, 0.9);
+        }
+
+        function speak(text, rate = 0.8) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = rate; // Slower for A1
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function toggleListening() {
+            if (isListening) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    console.error(e);
+                    // Usually happens if start is called while already running
+                    recognition.stop();
+                }
+            }
+        }
+
+        function updateMicVisuals(active) {
+            const btn = document.getElementById('mic-btn');
+            const icon = document.getElementById('mic-icon');
+            if (active) {
+                btn.classList.add('pulse-ring', 'bg-red-600');
+                btn.classList.remove('bg-red-500');
+                icon.classList.remove('fa-microphone');
+                icon.classList.add('fa-stop');
+            } else {
+                btn.classList.remove('pulse-ring', 'bg-red-600');
+                btn.classList.add('bg-red-500');
+                icon.classList.add('fa-microphone');
+                icon.classList.remove('fa-stop');
+            }
+        }
+
+        function handleAnswer(correct, transcript) {
+            const feedback = document.getElementById('feedback-area');
+            
+            if (correct) {
+                // Success
+                currentState.score += 10;
+                feedback.innerHTML = `
+                    <div class="flex items-center text-green-600">
+                        <i class="fas fa-check-circle text-2xl mr-2"></i>
+                        <div>
+                            <p class="font-bold">Correct!</p>
+                            <p class="text-xs text-gray-400">你說了: "${transcript}"</p>
+                        </div>
+                    </div>
+                `;
+                
+                // Switch buttons
+                document.getElementById('mic-btn').classList.add('hidden');
+                const nextBtn = document.getElementById('next-btn');
+                nextBtn.classList.remove('hidden');
+                nextBtn.classList.add('flex');
+                
+                // Play success sound (Simulated by UI visual primarily)
+            } else {
+                // Fail
+                feedback.innerHTML = `
+                    <div class="flex items-center text-orange-500">
+                        <i class="fas fa-times-circle text-2xl mr-2"></i>
+                        <div>
+                            <p class="font-bold">Try Again!</p>
+                            <p class="text-xs text-gray-400">聽到: "${transcript || '...'}"</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function nextLevel() {
+            currentState.level++;
+            loadLevel();
+        }
+
+        function finishGame() {
+            document.getElementById('view-game').classList.add('hidden');
+            document.getElementById('progress-indicator').classList.add('hidden');
+            document.getElementById('view-result').classList.remove('hidden');
+            document.getElementById('view-result').classList.add('flex');
+
+            const date = new Date();
+            document.getElementById('result-date').innerText = `${date.getFullYear()}/${date.getMonth()+1}/${date.getDate()}`;
+            document.getElementById('result-name').innerText = currentState.user;
+            document.getElementById('result-score').innerText = currentState.score;
+            
+            // Generate Creative Comment based on Score
+            let comment = "";
+            const score = currentState.score;
+            
+            if (score === 100) {
+                const comments = [
+                    "你是倫敦地鐵廣播員投胎轉世嗎？太強了！",
+                    "太神啦！這發音連英國女王都想幫你按讚！",
+                    "Perfect! 你的英文能力已經超越課本了！"
+                ];
+                comment = comments[Math.floor(Math.random() * comments.length)];
+            } else if (score >= 80) {
+                comment = "Very Good! 你的發音很標準，再一點點就無敵了！";
+            } else if (score >= 60) {
+                comment = "不錯喔！雖然有點台灣腔，但外國人聽得懂才重要！";
+            } else {
+                comment = "加油！你的英文老師現在正在角落畫圈圈...再試一次吧！";
+            }
+            
+            document.getElementById('result-comment').innerText = comment;
+        }
+
+        // Helper
+        function capitalize(s) {
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+    </script>
+</body>
+</html>
