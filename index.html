@@ -3,445 +3,733 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>B3L5 Mind the Gap - 語音闖關</title>
-    <!-- Tailwind CSS for rapid styling -->
+    <title>B3L5 Mind the Gap - 三階段闖關</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        body {
-            font-family: 'Noto Sans TC', 'Nunito', sans-serif;
-            touch-action: manipulation; /* Improves touch response */
-            background-color: #f0f9ff;
-        }
-        
-        /* Animation for mic listening */
-        .pulse-ring {
-            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-            animation: pulse-red 1.5s infinite;
-        }
-        
+        body { font-family: 'Noto Sans TC', 'Nunito', sans-serif; touch-action: manipulation; background-color: #f0f9ff; }
+        .pulse-ring { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); animation: pulse-red 1.5s infinite; }
         @keyframes pulse-red {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
-
-        .correct-anim { animation: bounce 0.5s; }
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+        .card-selected { border-color: #4f46e5; background-color: #e0e7ff; transform: scale(1.02); }
+        .card-matched { visibility: hidden; opacity: 0; transition: opacity 0.3s; }
+        .shake { animation: shake 0.5s; }
+        @keyframes shake {
+            0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); }
         }
-
-        /* Hide scrollbar for clean UI */
-        ::-webkit-scrollbar { display: none; }
+        /* Progress Bar Transition */
+        .progress-bar { transition: width 1s linear; }
     </style>
 </head>
-<body class="h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100">
+<body class="h-screen flex flex-col items-center overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100">
 
     <!-- APP CONTAINER -->
-    <div id="app" class="w-full max-w-md h-full max-h-[900px] bg-white shadow-xl relative overflow-hidden sm:rounded-xl sm:h-[90vh] sm:border-4 sm:border-indigo-200">
+    <div id="app" class="w-full max-w-md h-full bg-white shadow-xl relative overflow-hidden sm:rounded-xl sm:h-[95vh] sm:my-4 sm:border-4 sm:border-indigo-200 flex flex-col">
         
-        <!-- HEADER (Shared) -->
-        <div class="absolute top-0 w-full bg-indigo-600 text-white p-4 z-10 shadow-md flex justify-between items-center">
-            <h1 class="font-bold text-lg"><i class="fas fa-subway mr-2"></i>Mind the Gap!</h1>
-            <span id="progress-indicator" class="text-sm bg-indigo-800 px-2 py-1 rounded-full hidden">0/10</span>
+        <!-- HEADER -->
+        <div class="bg-indigo-600 text-white p-4 z-20 shadow-md flex justify-between items-center shrink-0">
+            <h1 class="font-bold text-lg"><i class="fas fa-subway mr-2"></i>Mind the Gap</h1>
+            <div class="flex items-center space-x-2">
+                <span id="level-badge" class="text-xs bg-indigo-800 px-2 py-1 rounded-full hidden">Level 1</span>
+                <span id="score-display" class="font-mono font-bold hidden">0%</span>
+            </div>
         </div>
 
-        <!-- VIEW 1: LOGIN / START -->
-        <div id="view-start" class="h-full flex flex-col justify-center items-center p-8 space-y-8">
-            <div class="text-center space-y-2">
-                <div class="w-24 h-24 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">🇬🇧</div>
-                <h2 class="text-3xl font-bold text-gray-800">單字語音闖關</h2>
-                <p class="text-gray-500">B3L5: I No Longer Mind the Gap</p>
-                <p class="text-sm text-indigo-500 font-bold bg-indigo-50 inline-block px-3 py-1 rounded-full">CEFR A1 Level</p>
+        <!-- CONTENT AREA (Scrollable) -->
+        <div id="main-content" class="flex-1 relative overflow-y-auto overflow-x-hidden">
+            
+            <!-- VIEW: START -->
+            <div id="view-start" class="h-full flex flex-col justify-center items-center p-8 space-y-6">
+                <div class="text-center space-y-2">
+                    <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-2 text-4xl">🇬🇧</div>
+                    <h2 class="text-2xl font-bold text-gray-800">三階段單字闖關</h2>
+                    <p class="text-gray-500 text-sm">B3L5: Mind the Gap</p>
+                </div>
+                
+                <div class="bg-blue-50 p-4 rounded-xl w-full text-sm space-y-2">
+                    <h3 class="font-bold text-indigo-700 mb-2">關卡說明：</h3>
+                    <p>1️⃣ <span class="font-bold">聽音辨義</span>：聽發音選中文 (全單字)</p>
+                    <p>2️⃣ <span class="font-bold">中英配對</span>：限時60秒 (隨機15題)</p>
+                    <p>3️⃣ <span class="font-bold">語音辨識</span>：開口說英文 (隨機10題)</p>
+                    <p class="text-red-500 text-xs mt-2 border-t border-blue-200 pt-2 font-bold">⚠️ 每關正確率須達 80% 才能晉級！</p>
+                </div>
+
+                <div class="w-full space-y-3">
+                    <input type="text" id="username-input" placeholder="請輸入姓名 / 座號" class="w-full p-3 border-2 border-indigo-200 rounded-xl text-center focus:outline-none focus:border-indigo-500">
+                    <button onclick="startGame()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition">
+                        開始挑戰
+                    </button>
+                </div>
             </div>
 
-            <div class="w-full space-y-4">
-                <label class="block text-gray-700 font-bold mb-2">請輸入姓名 / 座號：</label>
-                <input type="text" id="username-input" placeholder="例如：701 王小明" class="w-full p-4 border-2 border-indigo-200 rounded-xl text-lg focus:outline-none focus:border-indigo-500 transition shadow-sm text-center">
-                
-                <button onclick="startGame()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transform transition active:scale-95 text-xl flex items-center justify-center">
-                    <i class="fas fa-play mr-2"></i> 開始挑戰
+            <!-- VIEW: LEVEL INTRO (Transition) -->
+            <div id="view-intro" class="h-full flex flex-col justify-center items-center p-8 hidden bg-indigo-900 text-white z-30 absolute top-0 left-0 w-full">
+                <div class="text-center animate-bounce">
+                    <i id="intro-icon" class="fas fa-headphones-alt text-6xl mb-4"></i>
+                    <h2 id="intro-title" class="text-3xl font-bold mb-2">Level 1</h2>
+                    <p id="intro-desc" class="text-indigo-200 text-lg">聽音辨義</p>
+                </div>
+                <button onclick="startLevelActual()" class="mt-12 bg-white text-indigo-900 font-bold py-3 px-8 rounded-full shadow-lg hover:bg-gray-100 active:scale-95">
+                    準備好了！GO
                 </button>
-                
-                <p class="text-xs text-center text-gray-400 mt-4">
-                    <i class="fas fa-info-circle"></i> 需允許使用麥克風權限<br>建議使用 Chrome 或 Safari 瀏覽器
-                </p>
-            </div>
-        </div>
-
-        <!-- VIEW 2: GAME LOOP -->
-        <div id="view-game" class="h-full flex flex-col pt-20 pb-6 px-6 hidden relative">
-            
-            <!-- Word Card -->
-            <div class="flex-1 flex flex-col items-center justify-center space-y-6">
-                
-                <!-- Word Display -->
-                <div class="w-full bg-white border-2 border-gray-100 rounded-2xl shadow-lg p-6 text-center relative overflow-hidden group">
-                    <div class="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
-                    
-                    <p class="text-gray-400 text-sm mb-2">Vocabulary</p>
-                    <h2 id="current-word" class="text-4xl font-bold text-gray-800 mb-2">Passenger</h2>
-                    <p id="current-pos" class="text-indigo-500 text-lg font-medium italic mb-4">(n.)</p>
-                    
-                    <div class="h-px w-16 bg-gray-200 mx-auto mb-4"></div>
-                    
-                    <h3 id="current-meaning" class="text-2xl text-gray-600 font-bold">乘客</h3>
-                </div>
-
-                <!-- Example Sentence (Collapsible/Small) -->
-                <div class="w-full bg-blue-50 rounded-xl p-4 text-center">
-                    <p id="current-sentence" class="text-gray-600 text-sm leading-relaxed">
-                        The train was full of passengers.
-                    </p>
-                    <button onclick="speakSentence()" class="mt-2 text-indigo-600 text-sm font-bold flex items-center justify-center mx-auto hover:underline">
-                        <i class="fas fa-volume-up mr-1"></i> 聽例句
-                    </button>
-                </div>
-
-                <!-- Feedback Area -->
-                <div id="feedback-area" class="h-16 flex items-center justify-center w-full">
-                    <p class="text-gray-400 text-sm">點擊麥克風唸出單字</p>
-                </div>
-
             </div>
 
-            <!-- Controls -->
-            <div class="mt-auto w-full pb-8">
-                <div class="flex justify-center items-center space-x-6">
-                    <!-- Standard TTS -->
-                    <button onclick="speakWord()" class="w-16 h-16 rounded-full bg-gray-200 text-gray-700 shadow-md flex items-center justify-center active:bg-gray-300">
-                        <i class="fas fa-ear-listen text-2xl"></i>
-                    </button>
+            <!-- VIEW: LEVEL 1 (Listening) -->
+            <div id="view-level1" class="h-full flex flex-col p-6 hidden">
+                <div class="flex-1 flex flex-col justify-center items-center space-y-8">
+                    <!-- Progress -->
+                    <div class="w-full h-2 bg-gray-200 rounded-full mb-4">
+                        <div id="l1-progress" class="h-full bg-indigo-500 rounded-full" style="width: 0%"></div>
+                    </div>
 
-                    <!-- Microphone (Main Action) -->
-                    <button id="mic-btn" onclick="toggleListening()" class="w-24 h-24 rounded-full bg-red-500 text-white shadow-xl flex items-center justify-center transform transition active:scale-95 border-4 border-red-100">
-                        <i id="mic-icon" class="fas fa-microphone text-4xl"></i>
+                    <!-- Audio Button -->
+                    <button onclick="playL1Audio()" class="w-32 h-32 rounded-full bg-indigo-100 text-indigo-600 shadow-md flex items-center justify-center active:scale-95 transition hover:bg-indigo-200">
+                        <i class="fas fa-volume-up text-5xl"></i>
                     </button>
+                    <p class="text-gray-400 text-sm">點擊播放聲音</p>
 
-                    <!-- Skip/Next (Hidden initially) -->
-                    <button id="next-btn" onclick="nextLevel()" class="w-16 h-16 rounded-full bg-green-500 text-white shadow-md flex items-center justify-center hidden active:bg-green-600 correct-anim">
-                        <i class="fas fa-arrow-right text-2xl"></i>
-                    </button>
+                    <!-- Options -->
+                    <div id="l1-options" class="w-full grid grid-cols-1 gap-3">
+                        <!-- Options injected by JS -->
+                    </div>
                 </div>
-                <p class="text-center text-xs text-gray-400 mt-4">長按麥克風無效，請點擊一次開始</p>
             </div>
-        </div>
 
-        <!-- VIEW 3: RESULT -->
-        <div id="view-result" class="h-full flex flex-col justify-center items-center p-6 hidden bg-indigo-900 text-white text-center">
-            
-            <div class="bg-white text-gray-800 rounded-2xl p-8 w-full shadow-2xl space-y-4 max-w-sm">
-                <div class="border-b-2 border-gray-100 pb-4 mb-2">
-                    <h2 class="text-xl font-bold text-gray-400">闖關成績單</h2>
-                    <p id="result-date" class="text-xs text-gray-400 mt-1">2023/10/25</p>
+            <!-- VIEW: LEVEL 2 (Matching) -->
+            <div id="view-level2" class="h-full flex flex-col hidden relative">
+                <!-- Timer Bar -->
+                <div class="w-full h-2 bg-gray-200">
+                    <div id="l2-timer-bar" class="h-full bg-green-500 progress-bar" style="width: 100%"></div>
+                </div>
+                <div class="text-center py-2 bg-gray-50 border-b flex justify-between px-4">
+                    <span class="text-sm text-gray-500">配對剩餘: <span id="l2-remaining" class="font-bold text-indigo-600">15</span> 組</span>
+                    <span class="text-sm text-gray-500">時間: <span id="l2-time-text" class="font-bold text-red-500">60</span>s</span>
                 </div>
 
-                <div class="space-y-1">
-                    <p class="text-sm text-gray-500">姓名</p>
-                    <h3 id="result-name" class="text-2xl font-bold text-indigo-700">王小明</h3>
+                <!-- Grid Container (Scrollable) -->
+                <div id="l2-grid" class="flex-1 grid grid-cols-2 gap-3 p-4 content-start overflow-y-auto pb-20">
+                    <!-- Cards injected by JS -->
+                </div>
+            </div>
+
+            <!-- VIEW: LEVEL 3 (Speaking) -->
+            <div id="view-level3" class="h-full flex flex-col p-6 hidden">
+                <div class="text-center mb-6">
+                     <div class="w-full h-2 bg-gray-200 rounded-full mb-2">
+                        <div id="l3-progress" class="h-full bg-purple-500 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p class="text-xs text-gray-400">Question <span id="l3-q-num">1</span> / 10</p>
                 </div>
 
-                <div class="py-4 bg-gray-50 rounded-xl">
-                    <p class="text-sm text-gray-500 mb-1">總分</p>
-                    <div class="flex justify-center items-baseline text-indigo-600">
-                        <span id="result-score" class="text-6xl font-black">100</span>
-                        <span class="text-xl font-bold">/ 100</span>
+                <div class="flex-1 flex flex-col items-center justify-center space-y-6">
+                    <!-- Word Card -->
+                    <div class="w-full bg-white border-2 border-indigo-100 rounded-2xl shadow-lg p-6 text-center relative">
+                        <p class="text-gray-400 text-sm mb-1">請唸出這個字：</p>
+                        <h2 id="l3-word" class="text-4xl font-bold text-gray-800 mb-2">Passenger</h2>
+                        <h3 id="l3-meaning" class="text-xl text-gray-500">乘客</h3>
+                        
+                        <!-- Hint Button (Initially Hidden) -->
+                        <button id="l3-hint-btn" onclick="playL3Hint()" class="hidden mt-4 bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full text-sm font-bold flex items-center justify-center mx-auto hover:bg-yellow-200">
+                            <i class="fas fa-volume-up mr-2"></i> 聽發音 (再試一次)
+                        </button>
+                    </div>
+
+                    <!-- Feedback -->
+                    <div id="l3-feedback" class="h-12 flex items-center justify-center text-center">
+                        <p class="text-gray-400 text-sm">請按麥克風開始錄音</p>
                     </div>
                 </div>
 
-                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                    <p class="text-xs text-yellow-600 font-bold uppercase tracking-wide mb-1">Teacher's Comment</p>
-                    <p id="result-comment" class="text-gray-700 font-medium text-sm">
-                        根本是被英文耽誤的饒舌歌手！
-                    </p>
-                </div>
-
-                <div class="pt-4">
-                    <p class="text-xs text-red-500 font-bold animate-pulse">
-                        <i class="fas fa-camera"></i> 請截圖此畫面繳交作業
-                    </p>
+                <!-- Controls -->
+                <div class="mt-auto pb-8 flex justify-center">
+                    <button id="l3-mic-btn" onclick="toggleL3Mic()" class="w-20 h-20 rounded-full bg-red-500 text-white shadow-xl flex items-center justify-center active:scale-95 transition text-3xl">
+                        <i id="l3-mic-icon" class="fas fa-microphone"></i>
+                    </button>
                 </div>
             </div>
 
-            <button onclick="location.reload()" class="mt-8 text-white text-sm opacity-70 hover:opacity-100 underline">
-                重新挑戰
-            </button>
-        </div>
+            <!-- VIEW: RESULT / FAIL -->
+            <div id="view-result" class="h-full flex flex-col justify-center items-center p-6 hidden bg-white">
+                <div id="result-card" class="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-gray-100 p-6 text-center">
+                    
+                    <div id="result-header" class="mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">闖關結果</h2>
+                        <p id="result-user" class="text-indigo-600 font-bold">User</p>
+                    </div>
 
+                    <!-- Scores Table -->
+                    <div class="space-y-3 mb-6">
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <span class="text-sm font-bold text-gray-600">L1 聽音辨義</span>
+                            <span id="score-l1" class="font-mono font-bold text-lg text-gray-800">--%</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <span class="text-sm font-bold text-gray-600">L2 中英配對</span>
+                            <span id="score-l2" class="font-mono font-bold text-lg text-gray-800">--%</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <span class="text-sm font-bold text-gray-600">L3 語音辨識</span>
+                            <span id="score-l3" class="font-mono font-bold text-lg text-gray-800">--%</span>
+                        </div>
+                    </div>
+
+                    <div id="result-message-box" class="bg-indigo-50 p-4 rounded-xl mb-4">
+                        <p id="result-comment" class="text-indigo-800 font-bold text-sm">評語載入中...</p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div id="action-buttons">
+                        <!-- Injected by JS: Next Level or Screenshot or Retry -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
 
-    <!-- AUDIO ELEMENTS for SFX -->
-    <!-- Using inline minimal base64 for sound effects to keep it single file -->
+    <!-- Data & Logic -->
     <script>
-        // Data generated from PDF analysis (B3L5 Context)
-        const vocabList = [
-            { word: "passenger", pos: "n.", meaning: "乘客", sentence: "There were many passengers on the train." },
-            { word: "platform", pos: "n.", meaning: "月台", sentence: "Please wait on the platform." },
-            { word: "gap", pos: "n.", meaning: "空隙/缺口", sentence: "Mind the gap between the train and the platform." },
-            { word: "mind", pos: "v.", meaning: "介意/留意", sentence: "I don't mind waiting for you." },
-            { word: "voice", pos: "n.", meaning: "聲音", sentence: "She heard a familiar voice." },
-            { word: "security", pos: "n.", meaning: "安全/保全", sentence: "We must go through security checks." },
-            { word: "arrive", pos: "v.", meaning: "到達", sentence: "When will the train arrive?" },
-            { word: "departure", pos: "n.", meaning: "出發/離開", sentence: "The departure time is 3:00 PM." },
-            { word: "silence", pos: "n.", meaning: "沈默/寂靜", sentence: "They walked in silence." },
-            { word: "watch one's step", pos: "phr.", meaning: "小心腳步", sentence: "Please watch your step when getting off." }
+        // --- 1. DATA (Expanded for 15+ items) ---
+        const vocabDB = [
+            { id: 1, en: "passenger", ch: "乘客" },
+            { id: 2, en: "platform", ch: "月台" },
+            { id: 3, en: "gap", ch: "空隙/缺口" },
+            { id: 4, en: "mind", ch: "介意/留意" },
+            { id: 5, en: "voice", ch: "聲音" },
+            { id: 6, en: "security", ch: "安全/保全" },
+            { id: 7, en: "arrive", ch: "到達" },
+            { id: 8, en: "departure", ch: "出發" },
+            { id: 9, en: "silence", ch: "沈默" },
+            { id: 10, en: "watch one's step", ch: "小心腳步" },
+            { id: 11, en: "station", ch: "車站" },
+            { id: 12, en: "announcement", ch: "廣播" },
+            { id: 13, en: "recording", ch: "錄音" },
+            { id: 14, en: "husband", ch: "丈夫" },
+            { id: 15, en: "death", ch: "死亡" },
+            { id: 16, en: "message", ch: "訊息" },
+            { id: 17, en: "travel", ch: "旅行" }
         ];
 
-        let currentState = {
+        // --- 2. STATE ---
+        let gameState = {
             user: "",
-            level: 0,
-            score: 0,
-            attempts: 0
+            currentLevel: 1, // 1, 2, 3
+            scores: { l1: 0, l2: 0, l3: 0 }, // Percentages
+            l1Data: [],
+            l1Index: 0,
+            l1CorrectCount: 0,
+            l2Data: [],
+            l2PairsLeft: 0,
+            l2TimeLeft: 60,
+            l2Timer: null,
+            l2Selected: null,
+            l2Lock: false,
+            l3Data: [],
+            l3Index: 0,
+            l3CorrectCount: 0,
+            l3MistakeMade: false // Track if they messed up current word
         };
 
         let recognition;
-        let isListening = false;
 
-        // Initialize Speech Recognition
+        // --- 3. CORE FUNCTIONS ---
+
+        function startGame() {
+            const name = document.getElementById('username-input').value.trim();
+            if(!name) return alert("請輸入姓名！");
+            gameState.user = name;
+            gameState.currentLevel = 1;
+            
+            // Init Speech API early
+            initSpeech();
+
+            startLevel(1);
+        }
+
+        function startLevel(level) {
+            gameState.currentLevel = level;
+            
+            // Show Intro Screen first
+            const views = ['view-start', 'view-intro', 'view-level1', 'view-level2', 'view-level3', 'view-result'];
+            views.forEach(v => document.getElementById(v).classList.add('hidden'));
+            
+            const intro = document.getElementById('view-intro');
+            intro.classList.remove('hidden');
+            
+            const titles = ["聽音辨義", "中英配對", "語音辨識"];
+            const icons = ["fa-headphones-alt", "fa-puzzle-piece", "fa-microphone-alt"];
+            const descs = ["聽發音選出正確中文", "60秒內完成配對 (隨機15題)", "大聲唸出單字 (隨機10題)"];
+            
+            document.getElementById('intro-title').innerText = `Level ${level}: ${titles[level-1]}`;
+            document.getElementById('intro-icon').className = `fas ${icons[level-1]} text-6xl mb-4`;
+            document.getElementById('intro-desc').innerText = descs[level-1];
+            
+            document.getElementById('level-badge').innerText = `Level ${level}`;
+            document.getElementById('level-badge').classList.remove('hidden');
+        }
+
+        function startLevelActual() {
+            document.getElementById('view-intro').classList.add('hidden');
+            const level = gameState.currentLevel;
+
+            if (level === 1) initLevel1();
+            else if (level === 2) initLevel2();
+            else if (level === 3) initLevel3();
+        }
+
+        // --- LEVEL 1: LISTENING ---
+        function initLevel1() {
+            document.getElementById('view-level1').classList.remove('hidden');
+            // Use ALL words for Level 1
+            gameState.l1Data = shuffle([...vocabDB]);
+            gameState.l1Index = 0;
+            gameState.l1CorrectCount = 0;
+            renderLevel1Question();
+        }
+
+        function renderLevel1Question() {
+            if (gameState.l1Index >= gameState.l1Data.length) {
+                endLevel1();
+                return;
+            }
+
+            const current = gameState.l1Data[gameState.l1Index];
+            // Progress
+            const pct = (gameState.l1Index / gameState.l1Data.length) * 100;
+            document.getElementById('l1-progress').style.width = `${pct}%`;
+
+            // Auto play audio
+            setTimeout(() => speak(current.en), 500);
+
+            // Generate Options (1 Correct + 3 Wrong)
+            const others = vocabDB.filter(w => w.id !== current.id);
+            const wrongOptions = shuffle(others).slice(0, 3);
+            const options = shuffle([current, ...wrongOptions]);
+
+            const container = document.getElementById('l1-options');
+            container.innerHTML = "";
+            
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "w-full bg-white border-2 border-indigo-100 p-4 rounded-xl text-gray-700 font-bold shadow-sm hover:bg-indigo-50 active:bg-indigo-100 transition";
+                btn.innerText = opt.ch;
+                btn.onclick = () => checkLevel1Answer(opt.id, current.id, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function playL1Audio() {
+            const current = gameState.l1Data[gameState.l1Index];
+            speak(current.en);
+        }
+
+        function checkLevel1Answer(selectedId, correctId, btn) {
+            // Disable all buttons
+            const btns = document.getElementById('l1-options').children;
+            for(let b of btns) b.disabled = true;
+
+            if (selectedId === correctId) {
+                btn.classList.add('bg-green-100', 'border-green-500', 'text-green-700');
+                gameState.l1CorrectCount++;
+                setTimeout(() => {
+                    gameState.l1Index++;
+                    renderLevel1Question();
+                }, 800);
+            } else {
+                btn.classList.add('bg-red-100', 'border-red-500', 'text-red-700');
+                // Highlight correct one
+                for(let b of btns) {
+                    if (b.innerText === gameState.l1Data[gameState.l1Index].ch) {
+                        b.classList.add('bg-green-100', 'border-green-500');
+                    }
+                }
+                setTimeout(() => {
+                    gameState.l1Index++;
+                    renderLevel1Question();
+                }, 1500);
+            }
+        }
+
+        function endLevel1() {
+            const accuracy = Math.round((gameState.l1CorrectCount / gameState.l1Data.length) * 100);
+            gameState.scores.l1 = accuracy;
+            
+            if (accuracy >= 80) {
+                showResultScreen(true, "L1 通關！前往下一關", () => startLevel(2));
+            } else {
+                showResultScreen(false, "L1 失敗，請重試", () => startLevel(1));
+            }
+        }
+
+        // --- LEVEL 2: MATCHING (SPEED) ---
+        function initLevel2() {
+            document.getElementById('view-level2').classList.remove('hidden');
+            // Random 15 pairs
+            const selection = shuffle([...vocabDB]).slice(0, 15);
+            gameState.l2Data = selection;
+            gameState.l2PairsLeft = 15;
+            gameState.l2TimeLeft = 60;
+            gameState.l2Selected = null;
+            gameState.l2Lock = false;
+
+            // Generate Cards (15 * 2 = 30 cards)
+            let cards = [];
+            selection.forEach(item => {
+                cards.push({ id: item.id, type: 'en', text: item.en });
+                cards.push({ id: item.id, type: 'ch', text: item.ch });
+            });
+            cards = shuffle(cards);
+
+            const grid = document.getElementById('l2-grid');
+            grid.innerHTML = "";
+            cards.forEach(card => {
+                const el = document.createElement('div');
+                el.className = "bg-white p-4 rounded-lg shadow-md border-2 border-gray-100 flex items-center justify-center text-center cursor-pointer h-24 font-bold text-sm select-none active:scale-95 transition";
+                el.innerText = card.text;
+                el.dataset.id = card.id;
+                el.dataset.type = card.type; // en or ch
+                el.onclick = () => handleCardClick(el);
+                grid.appendChild(el);
+            });
+
+            document.getElementById('l2-remaining').innerText = 15;
+            document.getElementById('l2-time-text').innerText = 60;
+            document.getElementById('l2-timer-bar').style.width = '100%';
+
+            // Start Timer
+            gameState.l2Timer = setInterval(() => {
+                gameState.l2TimeLeft--;
+                document.getElementById('l2-time-text').innerText = gameState.l2TimeLeft;
+                const pct = (gameState.l2TimeLeft / 60) * 100;
+                document.getElementById('l2-timer-bar').style.width = `${pct}%`;
+
+                if (gameState.l2TimeLeft <= 0) {
+                    clearInterval(gameState.l2Timer);
+                    endLevel2(false); // Time out
+                }
+            }, 1000);
+        }
+
+        function handleCardClick(el) {
+            if (gameState.l2Lock || el.classList.contains('card-matched') || el.classList.contains('card-selected')) return;
+
+            el.classList.add('card-selected');
+
+            if (!gameState.l2Selected) {
+                // First card
+                gameState.l2Selected = el;
+            } else {
+                // Second card
+                const first = gameState.l2Selected;
+                gameState.l2Lock = true;
+
+                if (first.dataset.id === el.dataset.id && first.dataset.type !== el.dataset.type) {
+                    // Match!
+                    setTimeout(() => {
+                        first.classList.remove('card-selected');
+                        el.classList.remove('card-selected');
+                        first.classList.add('card-matched');
+                        el.classList.add('card-matched');
+                        // Remove from flow to clean up UI (optional, but 'visibility: hidden' keeps layout stable)
+                        
+                        gameState.l2PairsLeft--;
+                        document.getElementById('l2-remaining').innerText = gameState.l2PairsLeft;
+                        gameState.l2Selected = null;
+                        gameState.l2Lock = false;
+
+                        if (gameState.l2PairsLeft === 0) {
+                            clearInterval(gameState.l2Timer);
+                            endLevel2(true);
+                        }
+                    }, 300);
+                } else {
+                    // Mismatch
+                    setTimeout(() => {
+                        first.classList.add('shake', 'border-red-400', 'bg-red-50');
+                        el.classList.add('shake', 'border-red-400', 'bg-red-50');
+                    }, 100);
+
+                    setTimeout(() => {
+                        first.className = first.className.replace('shake border-red-400 bg-red-50 card-selected', '');
+                        el.className = el.className.replace('shake border-red-400 bg-red-50 card-selected', '');
+                        gameState.l2Selected = null;
+                        gameState.l2Lock = false;
+                    }, 800);
+                }
+            }
+        }
+
+        function endLevel2(finished) {
+            // Calculate score based on pairs found if timeout, or 100% if finished
+            // Requirement: 80% accuracy. Since it's a speed game, let's base it on pairs found.
+            // 80% of 15 is 12.
+            const pairsFound = 15 - gameState.l2PairsLeft;
+            const score = Math.round((pairsFound / 15) * 100);
+            gameState.scores.l2 = score;
+
+            if (score >= 80) {
+                showResultScreen(true, "L2 通關！前往最終關", () => startLevel(3));
+            } else {
+                showResultScreen(false, "時間到！完成度不足 80%", () => startLevel(2));
+            }
+        }
+
+
+        // --- LEVEL 3: SPEAKING ---
+        function initLevel3() {
+            document.getElementById('view-level3').classList.remove('hidden');
+            // Random 10
+            gameState.l3Data = shuffle([...vocabDB]).slice(0, 10);
+            gameState.l3Index = 0;
+            gameState.l3CorrectCount = 0;
+            renderLevel3Question();
+        }
+
+        function renderLevel3Question() {
+            if (gameState.l3Index >= gameState.l3Data.length) {
+                endLevel3();
+                return;
+            }
+
+            const current = gameState.l3Data[gameState.l3Index];
+            gameState.l3MistakeMade = false;
+
+            document.getElementById('l3-progress').style.width = `${(gameState.l3Index / 10) * 100}%`;
+            document.getElementById('l3-q-num').innerText = gameState.l3Index + 1;
+
+            document.getElementById('l3-word').innerText = capitalize(current.en);
+            document.getElementById('l3-meaning').innerText = current.ch;
+
+            // Reset UI
+            document.getElementById('l3-feedback').innerHTML = '<p class="text-gray-400 text-sm">請按麥克風開始錄音</p>';
+            document.getElementById('l3-hint-btn').classList.add('hidden');
+            
+            const micBtn = document.getElementById('l3-mic-btn');
+            micBtn.disabled = false;
+            micBtn.classList.remove('bg-gray-400', 'bg-red-500', 'pulse-ring');
+            micBtn.classList.add('bg-red-500');
+            document.getElementById('l3-mic-icon').className = "fas fa-microphone";
+        }
+
+        function toggleL3Mic() {
+            if (isListening) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch(e) { recognition.stop(); }
+            }
+        }
+
+        function playL3Hint() {
+            const word = gameState.l3Data[gameState.l3Index].en;
+            speak(word, 0.7);
+            
+            // Re-enable mic after hint
+            setTimeout(() => {
+                document.getElementById('l3-mic-btn').disabled = false;
+                document.getElementById('l3-mic-btn').classList.remove('bg-gray-400');
+                document.getElementById('l3-mic-btn').classList.add('bg-red-500');
+                document.getElementById('l3-feedback').innerHTML = '<p class="text-blue-500 text-sm font-bold">已聽提示，請再念一次</p>';
+            }, 1000);
+        }
+
+        // --- SPEECH LOGIC ---
         function initSpeech() {
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 recognition = new SpeechRecognition();
-                recognition.continuous = false; // Stop after one phrase
+                recognition.continuous = false;
                 recognition.interimResults = false;
-                recognition.lang = 'en-US'; // Detect English
+                recognition.lang = 'en-US';
 
-                recognition.onstart = function() {
+                recognition.onstart = () => {
                     isListening = true;
-                    updateMicVisuals(true);
-                    document.getElementById('feedback-area').innerHTML = '<p class="text-red-500 font-bold animate-pulse">正在聆聽... 請說英文</p>';
+                    const btn = document.getElementById('l3-mic-btn');
+                    btn.classList.add('pulse-ring', 'bg-red-600');
+                    document.getElementById('l3-mic-icon').className = "fas fa-stop";
+                    document.getElementById('l3-feedback').innerHTML = '<p class="text-red-500 animate-pulse font-bold">聆聽中...</p>';
                 };
 
-                recognition.onend = function() {
+                recognition.onend = () => {
                     isListening = false;
-                    updateMicVisuals(false);
-                    // If we didn't get a result but stopped naturally, prompt again
-                    if(!document.getElementById('next-btn').classList.contains('flex')) {
-                         document.getElementById('feedback-area').innerHTML = '<p class="text-gray-400 text-sm">沒聽清楚，請再試一次</p>';
-                    }
+                    const btn = document.getElementById('l3-mic-btn');
+                    btn.classList.remove('pulse-ring');
+                    document.getElementById('l3-mic-icon').className = "fas fa-microphone";
                 };
 
-                recognition.onresult = function(event) {
+                recognition.onresult = (event) => {
                     const transcript = event.results[0][0].transcript.toLowerCase();
-                    const targetWord = vocabList[currentState.level].word.toLowerCase();
-                    
-                    // Fuzzy matching logic (A1 level friendly)
-                    // If the transcript contains the word, or strict match
-                    // Remove special chars from phrase like "watch one's step" -> "watch step" or "watch your step"
-                    
-                    let isCorrect = false;
-                    
-                    // Handling phrases logic
-                    if (targetWord.includes("one's")) {
-                        // e.g., watch one's step -> accept "watch your step", "watch my step", "watch step"
-                        const base = targetWord.replace("one's", "").trim(); // "watch step"
-                        const parts = base.split(" ");
-                        if (transcript.includes(parts[0]) && transcript.includes(parts[1])) {
-                            isCorrect = true;
-                        }
-                    } else {
-                        // Simple words
-                        if (transcript.includes(targetWord) || targetWord.includes(transcript)) {
-                            // Length check to prevent "a" matching "apple" too easily
-                            if (Math.abs(transcript.length - targetWord.length) < 4) {
-                                isCorrect = true;
-                            }
-                        }
-                    }
-
-                    handleAnswer(isCorrect, transcript);
+                    checkSpeaking(transcript);
                 };
 
-                recognition.onerror = function(event) {
-                    console.log("Speech Error", event.error);
-                    document.getElementById('feedback-area').innerHTML = '<p class="text-red-500 text-sm">麥克風錯誤: ' + event.error + '</p>';
+                recognition.onnomatch = () => {
+                    document.getElementById('l3-feedback').innerHTML = '<p class="text-orange-500 font-bold"><i class="fas fa-exclamation-triangle"></i> 收音不清楚，請再念一次</p>';
+                };
+
+                recognition.onerror = (event) => {
+                    if (event.error === 'no-speech') {
+                         document.getElementById('l3-feedback').innerHTML = '<p class="text-orange-500 font-bold">沒聽到聲音，請再試一次</p>';
+                    } else {
+                        console.log("Error", event.error);
+                    }
                     isListening = false;
-                    updateMicVisuals(false);
+                    const btn = document.getElementById('l3-mic-btn');
+                    btn.classList.remove('pulse-ring');
                 };
             } else {
-                alert("您的瀏覽器不支援語音辨識功能，請使用 Chrome 或 Safari。");
+                alert("瀏覽器不支援語音辨識");
             }
         }
 
-        // --- Core Game Logic ---
+        function checkSpeaking(transcript) {
+            const target = gameState.l3Data[gameState.l3Index].en.toLowerCase();
+            let isCorrect = false;
 
-        function startGame() {
-            const name = document.getElementById('username-input').value.trim();
-            if (!name) {
-                alert("請輸入姓名！");
-                return;
-            }
-            currentState.user = name;
-            currentState.level = 0;
-            currentState.score = 0;
-
-            document.getElementById('view-start').classList.add('hidden');
-            document.getElementById('view-game').classList.remove('hidden');
-            document.getElementById('progress-indicator').classList.remove('hidden');
-            
-            initSpeech();
-            loadLevel();
-        }
-
-        function loadLevel() {
-            if (currentState.level >= vocabList.length) {
-                finishGame();
-                return;
+            // Simple fuzzy logic for A1
+            if (target.includes("one's")) {
+                const base = target.replace("one's", "").trim();
+                const parts = base.split(" ");
+                if (transcript.includes(parts[0]) && transcript.includes(parts[1])) isCorrect = true;
+            } else {
+                 if (transcript.includes(target) || target === transcript) isCorrect = true;
+                 if (target.length > 4 && Math.abs(transcript.length - target.length) < 3 && transcript.startsWith(target[0])) isCorrect = true; // Very loose for kids
             }
 
-            const data = vocabList[currentState.level];
-            
-            // Update UI
-            document.getElementById('current-word').innerText = capitalize(data.word);
-            document.getElementById('current-pos').innerText = `(${data.pos})`;
-            document.getElementById('current-meaning').innerText = data.meaning;
-            document.getElementById('current-sentence').innerText = data.sentence;
-            document.getElementById('progress-indicator').innerText = `${currentState.level + 1} / ${vocabList.length}`;
-            
-            // Reset Controls
-            document.getElementById('feedback-area').innerHTML = '<p class="text-gray-400 text-sm">點擊紅色麥克風唸出單字</p>';
-            document.getElementById('next-btn').classList.add('hidden');
-            document.getElementById('next-btn').classList.remove('flex');
-            document.getElementById('mic-btn').classList.remove('hidden');
-            document.getElementById('mic-btn').disabled = false;
-            
-            // Auto play TTS slightly delayed
-            // setTimeout(speakWord, 500); 
-            // Better to let user click to hear, less intrusive.
+            if (isCorrect) {
+                // Correct
+                if (!gameState.l3MistakeMade) gameState.l3CorrectCount++; // Only count if correct on first try (or lenient?)
+                // Actually, logic says "If wrong, hint then retry".
+                // If they get it right eventually, do we count it? 
+                // Let's count it as correct if they eventually pass, BUT "80% accuracy" usually implies first try.
+                // However, for teaching, if they self-correct, it's good.
+                // Let's implement strict scoring: only +1 if no hint used? 
+                // No, prompt says "Must reach 80%". If infinite retries, everyone gets 100%.
+                // Let's say: If they used a hint, they pass the question but don't get the point? Or get half point?
+                // To keep it encouraging: If they succeed after hint, they get the point, BUT if they skip, they lose it. 
+                // Since there is no skip button, they must pass. 
+                // Wait, "達正確率80%". If they are forced to retry until correct, correctness is 100%.
+                // So, the 'correctness' must be based on "Did they get it right the FIRST time?".
+                
+                if(!gameState.l3MistakeMade) {
+                    gameState.l3CorrectCount++;
+                     document.getElementById('l3-feedback').innerHTML = `<p class="text-green-600 font-bold"><i class="fas fa-check"></i> Great! (${transcript})</p>`;
+                } else {
+                     document.getElementById('l3-feedback').innerHTML = `<p class="text-green-600 font-bold"><i class="fas fa-check"></i> Good job!</p>`;
+                }
+
+                setTimeout(() => {
+                    gameState.l3Index++;
+                    renderLevel3Question();
+                }, 1500);
+
+            } else {
+                // Wrong
+                gameState.l3MistakeMade = true;
+                document.getElementById('l3-feedback').innerHTML = `<p class="text-red-500 font-bold">不正確 (聽到: ${transcript})</p>`;
+                
+                // Show hint button and disable mic until clicked
+                document.getElementById('l3-hint-btn').classList.remove('hidden');
+                document.getElementById('l3-mic-btn').disabled = true;
+                document.getElementById('l3-mic-btn').classList.add('bg-gray-400');
+                document.getElementById('l3-mic-btn').classList.remove('bg-red-500');
+            }
         }
 
-        function speakWord() {
-            const word = vocabList[currentState.level].word;
-            speak(word);
+        function endLevel3() {
+            // Count logic: We counted correct on FIRST try roughly or passed?
+            // Let's assume gameState.l3CorrectCount tracks "Perfect" answers.
+            // If they retried, they pass the level flow but score might be lower.
+            // But wait, if they are stuck in loop until correct, how do they fail?
+            // Modification: Allow them to proceed even if "Good job" (after retry).
+            // But score only increments if !mistakeMade. 
+            // So if they made mistakes on 3 words, score is 7/10.
+            
+            const accuracy = (gameState.l3CorrectCount / 10) * 100;
+            gameState.scores.l3 = accuracy;
+
+            if (accuracy >= 80) {
+                showFinalResult();
+            } else {
+                showResultScreen(false, "L3 正確率未達 80% (首次嘗試)", () => startLevel(3));
+            }
         }
 
-        function speakSentence() {
-            const sentence = vocabList[currentState.level].sentence;
-            speak(sentence, 0.9);
+        // --- FINAL RESULT SCREEN ---
+        function showResultScreen(isPass, msg, action) {
+            const views = ['view-start', 'view-intro', 'view-level1', 'view-level2', 'view-level3', 'view-result'];
+            views.forEach(v => document.getElementById(v).classList.add('hidden'));
+            document.getElementById('view-result').classList.remove('hidden');
+            
+            // Only show relevant scores so far
+            updateScoreTable();
+
+            document.getElementById('result-user').innerText = gameState.user;
+            document.getElementById('result-comment').innerText = msg;
+            
+            const btnContainer = document.getElementById('action-buttons');
+            btnContainer.innerHTML = "";
+            const btn = document.createElement('button');
+            btn.className = isPass ? "w-full bg-green-500 text-white font-bold py-3 rounded-xl shadow-lg" : "w-full bg-red-500 text-white font-bold py-3 rounded-xl shadow-lg";
+            btn.innerText = isPass ? "下一關 / 完成" : "重新挑戰本關";
+            btn.onclick = action;
+            btnContainer.appendChild(btn);
+        }
+
+        function showFinalResult() {
+            showResultScreen(true, "恭喜完成所有挑戰！請截圖繳交。", null);
+            
+            // Generate Teacher Comment
+            const avg = (gameState.scores.l1 + gameState.scores.l2 + gameState.scores.l3) / 3;
+            let comment = "";
+            if (avg >= 95) comment = "太強了！你是英文單字王！👑";
+            else if (avg >= 90) comment = "Excellent! 發音標準，反應超快！🔥";
+            else if (avg >= 80) comment = "Very Good! 穩紮穩打，表現很棒！👍";
+            else comment = "Good job! 順利通關，繼續保持！💪";
+
+            document.getElementById('result-comment').innerText = comment;
+            document.getElementById('result-comment').classList.add('text-lg');
+
+            // Hide the button, show screenshot hint
+            document.getElementById('action-buttons').innerHTML = `
+                <div class="mt-4 text-center">
+                    <p class="text-red-500 font-bold animate-pulse text-sm mb-4"><i class="fas fa-camera"></i> 請現在截圖此畫面繳交作業</p>
+                    <button onclick="location.reload()" class="text-gray-400 underline text-sm">回到首頁</button>
+                </div>
+            `;
+        }
+
+        function updateScoreTable() {
+            document.getElementById('score-l1').innerText = gameState.scores.l1 > 0 ? gameState.scores.l1 + "%" : "--";
+            document.getElementById('score-l2').innerText = gameState.scores.l2 > 0 ? gameState.scores.l2 + "%" : "--";
+            document.getElementById('score-l3').innerText = gameState.scores.l3 > 0 ? gameState.scores.l3 + "%" : "--";
+        }
+
+        // --- UTILS ---
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
         }
 
         function speak(text, rate = 0.8) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'en-US';
-            utterance.rate = rate; // Slower for A1
+            utterance.rate = rate;
             window.speechSynthesis.speak(utterance);
         }
 
-        function toggleListening() {
-            if (isListening) {
-                recognition.stop();
-            } else {
-                try {
-                    recognition.start();
-                } catch (e) {
-                    console.error(e);
-                    // Usually happens if start is called while already running
-                    recognition.stop();
-                }
-            }
-        }
-
-        function updateMicVisuals(active) {
-            const btn = document.getElementById('mic-btn');
-            const icon = document.getElementById('mic-icon');
-            if (active) {
-                btn.classList.add('pulse-ring', 'bg-red-600');
-                btn.classList.remove('bg-red-500');
-                icon.classList.remove('fa-microphone');
-                icon.classList.add('fa-stop');
-            } else {
-                btn.classList.remove('pulse-ring', 'bg-red-600');
-                btn.classList.add('bg-red-500');
-                icon.classList.add('fa-microphone');
-                icon.classList.remove('fa-stop');
-            }
-        }
-
-        function handleAnswer(correct, transcript) {
-            const feedback = document.getElementById('feedback-area');
-            
-            if (correct) {
-                // Success
-                currentState.score += 10;
-                feedback.innerHTML = `
-                    <div class="flex items-center text-green-600">
-                        <i class="fas fa-check-circle text-2xl mr-2"></i>
-                        <div>
-                            <p class="font-bold">Correct!</p>
-                            <p class="text-xs text-gray-400">你說了: "${transcript}"</p>
-                        </div>
-                    </div>
-                `;
-                
-                // Switch buttons
-                document.getElementById('mic-btn').classList.add('hidden');
-                const nextBtn = document.getElementById('next-btn');
-                nextBtn.classList.remove('hidden');
-                nextBtn.classList.add('flex');
-                
-                // Play success sound (Simulated by UI visual primarily)
-            } else {
-                // Fail
-                feedback.innerHTML = `
-                    <div class="flex items-center text-orange-500">
-                        <i class="fas fa-times-circle text-2xl mr-2"></i>
-                        <div>
-                            <p class="font-bold">Try Again!</p>
-                            <p class="text-xs text-gray-400">聽到: "${transcript || '...'}"</p>
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        function nextLevel() {
-            currentState.level++;
-            loadLevel();
-        }
-
-        function finishGame() {
-            document.getElementById('view-game').classList.add('hidden');
-            document.getElementById('progress-indicator').classList.add('hidden');
-            document.getElementById('view-result').classList.remove('hidden');
-            document.getElementById('view-result').classList.add('flex');
-
-            const date = new Date();
-            document.getElementById('result-date').innerText = `${date.getFullYear()}/${date.getMonth()+1}/${date.getDate()}`;
-            document.getElementById('result-name').innerText = currentState.user;
-            document.getElementById('result-score').innerText = currentState.score;
-            
-            // Generate Creative Comment based on Score
-            let comment = "";
-            const score = currentState.score;
-            
-            if (score === 100) {
-                const comments = [
-                    "你是倫敦地鐵廣播員投胎轉世嗎？太強了！",
-                    "太神啦！這發音連英國女王都想幫你按讚！",
-                    "Perfect! 你的英文能力已經超越課本了！"
-                ];
-                comment = comments[Math.floor(Math.random() * comments.length)];
-            } else if (score >= 80) {
-                comment = "Very Good! 你的發音很標準，再一點點就無敵了！";
-            } else if (score >= 60) {
-                comment = "不錯喔！雖然有點台灣腔，但外國人聽得懂才重要！";
-            } else {
-                comment = "加油！你的英文老師現在正在角落畫圈圈...再試一次吧！";
-            }
-            
-            document.getElementById('result-comment').innerText = comment;
-        }
-
-        // Helper
-        function capitalize(s) {
-            return s.charAt(0).toUpperCase() + s.slice(1);
-        }
+        function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
     </script>
 </body>
